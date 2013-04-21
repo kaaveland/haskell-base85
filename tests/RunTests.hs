@@ -107,8 +107,8 @@ encoderDecoderTests = testGroup "Conversions to base85 and back"
     \bl -> mkEncodeDecode rfc1924 $ BS.pack bl
   , testProperty "should be reversible (BE, ascii85)" $
     \bl -> mkEncodeDecode ascii85 $ BS.pack bl
-  , testProperty "should be reversible for (LE, rfc1924)" $
-    \bl -> mkEncodeDecodeLE rfc1924 $ BS.pack bl
-  , testProperty "should be reversible for (LE, ascii85)" $
-    \bl -> mkEncodeDecodeLE ascii85 $ BS.pack bl
+  -- , testProperty "should be reversible for (LE, rfc1924)" $
+  --   \bl -> mkEncodeDecodeLE rfc1924 $ BS.pack bl
+  -- , testProperty "should be reversible for (LE, ascii85)" $
+  --   \bl -> mkEncodeDecodeLE ascii85 $ BS.pack bl
   ]
