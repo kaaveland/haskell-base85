@@ -1,9 +1,14 @@
-hbase85
+base85
 ======
 
-hbase85 is a simple library for performing base85 encoding and decoding
+base85 is a simple library for performing base85 encoding and decoding
 in Haskell. It was written in half a day to learn cabal and how to set up
 testing in a cabal project.
+
+Base85 encoding is generally used to encode binary data to text so that it
+can be sent over protocols that do line conversions have significant whitespace.
+
+It can however not be used in XML/SGML documents without escaping.
 
 Features
 ========
@@ -17,7 +22,7 @@ Bugs
 ====
 Currently it does not handle padding correctly when using little endian encoding
 and decoding. Strictly speaking this doesn't really matter, as both RFC1924 and
-ASCII85 use big endian.
+ASCII85 use big endian. This breaks two of the tests currently.
 
 Efficiency
 ==========
