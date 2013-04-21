@@ -1,7 +1,15 @@
 name:                base85
 version:             0.1.0.0
+homepage:            https://github.com/kaaveland/haskell-base85
 synopsis:            Translate bytes to base85 and back.
--- description:         
+description:         
+   Base85 is a binary to text codec that can be used to transfer
+   binary data over protocols that have significant whitespace or
+   do linefeed or similar.
+   
+   This is a library that implements the two most common base85
+   codecs. It was written to learn cabal and testing with Haskell,
+   not for efficiency.
 license:             BSD3
 license-file:        LICENSE
 author:              Robin Kåveland Hansen
@@ -11,13 +19,17 @@ category:            Codec
 build-type:          Simple
 cabal-version:       >=1.8
 
+source-repository head
+  type:           git
+  location:       git@github.com:kaaveland/haskell-base85.git
+
 library
   exposed-modules:     Codec.Base85, Codec.Base85.Internal
   hs-source-dirs:      src
   build-depends:       base ==4.5.*,
                        bytestring,
                        vector
-  ghc-options:         -Wall -fno-warn-name-shadowing -fno-warn-unused-do-bind
+  ghc-options:         -O2 -Wall -fno-warn-name-shadowing -fno-warn-unused-do-bind
 
 test-suite tests
   main-is:             RunTests.hs
