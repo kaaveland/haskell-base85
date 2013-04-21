@@ -74,12 +74,14 @@ type Base85Table = U.Vector Word8
 data Base85 = Base85 {
   -- | Retrieve the alphabet being used for encoding.
   encoding :: Base85Alphabet
-  -- | Retrieve the table being used for decoding
-  , decoding :: Base85Alphabet} deriving (Show, Eq)
+  -- | Retrieve the table being used for decoding.
+  , decoding :: Base85Alphabet
+  -- | Exands zeros in the input string to groups of zeros before decoding.
+  , expandZeros :: BS.ByteString -> BS.ByteString}
             
 -- | Given an alphabet of characters, sets up encoding and decoding tables.
 -- This does no error-checking.
-fromAlphabetInternal :: [Word8] -> Base85
+fromAlphabetInternal :: [Word8] -> (BS.ByteString -> BS.ByteString) -> Base85
 fromAlphabetInternal alpha = Base85 enc dec
   where enc = U.fromList alpha
         dec = decodingTable alpha
@@ -90,7 +92,11 @@ ascii85Alphabet = [33..117]
 
 -- | The encoding and decoding tables for ASCII85.
 ascii85 :: Base85
-ascii85 = fromAlphabetInternal ascii85Alphabet
+ascii85 = fromAlphabetInternal ascii85Alphabet expandZeros
+  where expandZeros = BS.intercalate excls . BS.split z
+        z = fromIntegral $ ord 'z'
+        excls = BS.replicate 5 excl
+        excl = fromIntegral $ ord '!'
 
 -- | RFC1924 Base85 alphabet.
 -- (See <http://tools.ietf.org/html/rfc1924>)
@@ -100,7 +106,7 @@ rfc1924Alphabet = fromString $ ['0'..'9'] ++ ['A'..'Z'] ++ ['a'..'z'] ++ rest
 
 -- | The encoding and decoding tables for the RFC1924 alphabet.
 rfc1924 :: Base85
-rfc1924 = fromAlphabetInternal rfc1924Alphabet
+rfc1924 = fromAlphabetInternal rfc1924Alphabet id
 
 -- | Given an alphabet, this creates the reverse lookup-table.
 decodingTable :: [Word8] -> Base85Table
@@ -236,7 +242,7 @@ decodeChunkLE table = BS.pack . unWord32LE . decodeChunk table
 
 -- | Unsafely apply 'ChunkDecoder' to every chunk of 5 bytes in the
 -- input 'BS.ByteString'. This will fail if the length of the input
--- is not a multiple of 5. Do not call this directly.
+-- is not a multiple of 5. It does not expand zeros. Do not call this directly.
 unsafeDecode :: ChunkDecoder -> BS.ByteString -> BS.ByteString
 unsafeDecode decoder bs = BS.concat groups
   where groups = map decoder $ groupBS 5 bs
@@ -254,9 +260,10 @@ removeAllWhiteSpace = BS.filter (not . isBlank)
 -- before the function returns.
 --
 -- Padding is always done using the last valid byte of the provided
--- alphabet.
+-- alphabet. This expands zeros.
 decode :: Base85 -> ChunkDecoder -> BS.ByteString -> BS.ByteString
-decode tab decoder bs = let safeBS = removeAllWhiteSpace bs
+decode tab decoder bs = let expanded = expandZeros tab bs
+                            safeBS = removeAllWhiteSpace expanded
                             pad = 5 - BS.length safeBS `rem` 5
                             padItem = U.last $ encoding tab
                             bs' = BS.append safeBS (BS.replicate pad padItem)

@@ -61,22 +61,22 @@ import qualified Data.ByteString.Lazy as BS
 
 -- | Create a new 'Base85' from an alphabet.
 -- This checks that the alphabet is valid.
-
-makeEncoder :: [Word8] -> Maybe Base85
-makeEncoder bytes
+makeEncoder :: [Word8] -> (BS.ByteString -> BS.ByteString) -> Maybe Base85
+makeEncoder bytes zeroExpander
   | length bytes /= length (nub bytes) ||
     length bytes /= 85 = Nothing
-  | otherwise = return $ fromAlphabetInternal bytes
+  | otherwise = return $ fromAlphabetInternal bytes zeroExpander
 -- | Create a new 'Base85' from an alphabet.
 -- This checks that the alphabet is valid.
-makeEncoderFromString :: String -> Maybe Base85
-makeEncoderFromString = makeEncoder . fromString
+makeEncoderFromString :: String -> (BS.ByteString -> BS.ByteString) -> Maybe Base85
+makeEncoderFromString alphabet = makeEncoder (fromString alphabet)
 
 -- | Create a new 'Base85' from an alphabet that contains only
 -- ascii bytes and only printable characters.
-makeAsciiEncoderFromString :: String -> Maybe Base85
-makeAsciiEncoderFromString alphabet
-  | all isAscii alphabet && all isPrint alphabet = makeEncoderFromString alphabet
+makeAsciiEncoderFromString :: String -> (BS.ByteString -> BS.ByteString) -> Maybe Base85
+makeAsciiEncoderFromString alphabet zeroExpander
+  | all isAscii alphabet && all isPrint alphabet =
+    makeEncoderFromString alphabet zeroExpander
   | otherwise = Nothing
 
 -- | Standard ascii85 decoding.
