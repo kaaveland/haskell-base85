@@ -22,7 +22,8 @@ tests :: [Test]
 tests = [ rfc1924Tests
         , ascii85Tests
         , word32Tests
-        , encodingTests ]
+        , encodingTests
+        , wordConversions]
 
 toChar :: Word8 -> Char
 toChar = chr . fromIntegral
@@ -76,7 +77,7 @@ word32Tests = testGroup "word32 encoding"
 encodingTests :: Test
 encodingTests = testGroup "encoding bytestrings"
   [ testCase "bs encoder" $ assertEqual "encode bs"
-    (fromString "&i<X6RK*<f") (encode (encodeChunkBE ascii85Alpha) chunk)
+    (fromString "&i<X6RK") (encode (encodeChunkBE ascii85Alpha) chunk)
   , testProperty "should not fail for any BS"
     (\bs -> (evaluate $ encodeBE rfc1924Alpha (fromString bs)) `seq` True)
   , testProperty "should not fail for any BS"
@@ -89,5 +90,7 @@ encodingTests = testGroup "encoding bytestrings"
 
 wordConversions :: Test
 wordConversions = testGroup "Conversions from Word32 to Word8 and back"
-  [ testProperty "should be reversible"
-    (\w32 -> w32 == (toWord32 $ unWord32 w32)) ]
+  [ testProperty "should be reversible (BE)"
+    (\w32 -> w32 == (toWord32BE $ unWord32BE w32))
+  , testProperty "should be reversible (LE)"
+    (\w32 -> w32 == (toWord32LE $ unWord32LE w32))]

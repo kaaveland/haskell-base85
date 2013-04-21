@@ -11,8 +11,10 @@ module Codec.Base85
        , encodeBE
        , encodeLE
        , encode
-       , toWord32
-       , unWord32
+       , toWord32BE
+       , unWord32BE
+       , toWord32LE
+       , unWord32LE
        ) where
 
 import qualified Data.ByteString.Lazy as BS
@@ -70,7 +72,7 @@ lPow85 = (lowPowersOf85 U.!) . fromIntegral
 -- This function is not safe to use with ByteStrings with length shorter than 4.
 -- Conversion is done in Big Endian
 chunkToWord32BE :: BS.ByteString -> Word32
-chunkToWord32BE bs = toWord32 $ map getByte [0..3]
+chunkToWord32BE bs = toWord32BE $ map getByte [0..3]
   where getByte = BS.index bs
 
 -- |chunkToWord32LE grabs 4 Word8s from a ByteString and creates a Word32.
@@ -79,6 +81,7 @@ chunkToWord32BE bs = toWord32 $ map getByte [0..3]
 chunkToWord32LE :: BS.ByteString -> Word32
 chunkToWord32LE = chunkToWord32BE . BS.reverse . BS.take 4
 
+-- |encodeWord32 uses the provided alphabet to encode a Word32 into 5 Word8s.
 encodeWord32 :: Base85Alphabet -> Word32 -> BS.ByteString
 encodeWord32 alpha w32 = BS.pack encoded
   where get = (alpha U.!) . fromIntegral
@@ -90,9 +93,13 @@ encodeWord32 alpha w32 = BS.pack encoded
 type ChunkEncoder = BS.ByteString -> BS.ByteString
 type ChunkDecoder = BS.ByteString -> BS.ByteString
 
+-- |encodeChunkBE uses the provided alphabet to encode a chunk of 4 Word8s.
+-- It uses Big Endian.
 encodeChunkBE :: Base85Alphabet -> ChunkEncoder
 encodeChunkBE alpha = encodeWord32 alpha . chunkToWord32BE
 
+-- |encodeChunkLE uses the provided alphabet to encode a chunk of 4 Word8s.
+-- It uses Little Endian.
 encodeChunkLE :: Base85Alphabet -> ChunkEncoder
 encodeChunkLE alpha = encodeWord32 alpha . chunkToWord32LE
 
@@ -103,21 +110,34 @@ unsafeEncode :: ChunkEncoder -> BS.ByteString -> BS.ByteString
 unsafeEncode encoder bs = BS.concat groups
   where groups = map encoder $ groupBS 4 bs
 
+-- \encode uses the provided encoder to encode all chunks of 4 Word8s into chunks of
+--  5 Word8s that are then concatenated.
 encode :: ChunkEncoder -> BS.ByteString -> BS.ByteString
 encode encoder bs = let pad = 4 - BS.length bs `rem` 4
                         bs' = BS.append bs (BS.replicate pad 0)
-                    in unsafeEncode encoder bs'
+                        encoded = unsafeEncode encoder bs'
+                    in BS.take (BS.length encoded - pad) encoded
 
 encodeBE, encodeLE :: Base85Alphabet -> BS.ByteString -> BS.ByteString
+-- |encodeBE uses the provided alphabet to encode with Big Endian conversion.
 encodeBE alpha = encode (encodeChunkBE alpha)
+-- |encodeLE uses the provided alphabet to encode with Little Endian conversion.
 encodeLE alpha = encode (encodeChunkLE alpha)
 
-toWord32 :: [Word8] -> Word32
-toWord32 [b1, b2, b3, b4] =
+
+toWord32BE, toWord32LE :: [Word8] -> Word32
+-- |toWord32BE takes a list of 4 Word8s and creates a Word32 in Big Endian.
+toWord32BE [b1, b2, b3, b4] =
   (b1 `shL` 24) .|. (b2 `shL` 16)  .|. (b3 `shL` 8) .|. (fromIntegral b4)
   where byte `shL` v = (fromIntegral byte) `shiftL` v
-toWord32 _ = error "toWord32: need 4 Word8s to create Word32"
+toWord32BE _ = error "toWord32BE: need 4 Word8s to create Word32"
+-- |toWord32BE takes a list of 4 Word8s and creates a Word32 in Little Endian.
+toWord32LE = toWord32BE . reverse
 
-unWord32 :: Word32 -> [Word8]
-unWord32 w32 = [shR 24, shR 16, shR 8, shR 0]
+unWord32LE, unWord32BE :: Word32 -> [Word8]
+-- |unWord32BE takes a Word32 and creates a list of 4 Word8s in Big Endian
+unWord32BE w32 = [shR 24, shR 16, shR 8, shR 0]
   where shR v = 0xff .&. (fromIntegral $ w32 `shiftR` v)
+-- |unWord32BE takes a Word32 and creates a list of 4 Word8s in Little Endian
+unWord32LE = reverse . unWord32BE
+
