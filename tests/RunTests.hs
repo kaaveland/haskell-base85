@@ -1,6 +1,6 @@
 module Main(main) where
 
-import Codec.Base85.Internal
+import Codec.Base85.Internal hiding(fromString)
 
 import Control.Exception
 import Data.Char
@@ -98,10 +98,17 @@ wordConversions = testGroup "Conversions from Word32 to Word8 and back"
 mkEncodeDecode :: Base85 -> BS.ByteString -> Bool
 mkEncodeDecode alpha bs = bs == (decodeBE alpha $ encodeBE alpha bs)
 
+mkEncodeDecodeLE :: Base85 -> BS.ByteString -> Bool
+mkEncodeDecodeLE alpha bs = bs == (decodeLE alpha $ encodeLE alpha bs)
+
 encoderDecoderTests :: Test
-encoderDecoderTests = testGroup "Conversions and back"
+encoderDecoderTests = testGroup "Conversions to base85 and back"
   [ testProperty "should be reversible (BE, rfc1924)" $
     \bl -> mkEncodeDecode rfc1924 $ BS.pack bl
   , testProperty "should be reversible (BE, ascii85)" $
     \bl -> mkEncodeDecode ascii85 $ BS.pack bl
+  , testProperty "should be reversible for (LE, rfc1924)" $
+    \bl -> mkEncodeDecodeLE rfc1924 $ BS.pack bl
+  , testProperty "should be reversible for (LE, ascii85)" $
+    \bl -> mkEncodeDecodeLE ascii85 $ BS.pack bl
   ]
