@@ -260,7 +260,8 @@ removeAllWhiteSpace = BS.filter (not . isBlank)
 -- before the function returns.
 --
 -- Padding is always done using the last valid byte of the provided
--- alphabet. This expands zeros.
+-- alphabet. This expands zeros using the expandZeros function of the
+-- provided 'Base85'.
 decode :: Base85 -> ChunkDecoder -> BS.ByteString -> BS.ByteString
 decode tab decoder bs = let expanded = expandZeros tab bs
                             safeBS = removeAllWhiteSpace expanded
@@ -274,6 +275,7 @@ decode tab decoder bs = let expanded = expandZeros tab bs
 -- instance.
 decodeBE :: Base85 -> ChunkDecoder
 decodeBE table = decode table $ decodeChunkBE table
+
 -- | This performs non-standard, Little Endian decoding using the provided 'Base85'
 -- instance.
 decodeLE :: Base85 -> ChunkDecoder
